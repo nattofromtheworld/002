@@ -1,30 +1,65 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>okami.glb 表示</title>
-    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <meta charset="utf-8">
+    <title>FBX Viewer</title>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background-color: #f0f0f0; /* 背景色を任意で設定 */
-        }
-        model-viewer {
-            width: 100vw;
-            height: 100vh;
-        }
+        body { margin: 0; overflow: hidden; }
+        canvas { width: 100%; height: 100%; }
     </style>
 </head>
 <body>
-    <model-viewer
-        src="001.glb"
-        alt="001"
-        auto-rotate
-        camera-controls
-        ar
-    ></model-viewer>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        // シーン、カメラ、レンダラー
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // カメラ位置
+        camera.position.set(0, 0, 5);
+
+        // OrbitControls
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 0, 0);
+        controls.update();
+
+        // ライト
+        const light = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(light);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        directionalLight.position.set(1, 1, 1);
+        scene.add(directionalLight);
+
+        // FBXローダー
+        const loader = new THREE.FBXLoader();
+        loader.load('0010.fbx', function (object) {
+            scene.add(object);
+            // モデルをシーン中央に配置
+            const box = new THREE.Box3().setFromObject(object);
+            const center = box.getCenter(new THREE.Vector3());
+            object.position.sub(center);
+        }, undefined, function (error) {
+            console.error('An error occurred:', error);
+        });
+
+        // ウィンドウリサイズ対応
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // アニメーションループ
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        animate();
+    </script>
 </body>
 </html>
