@@ -5,21 +5,28 @@
     <title>FBX Viewer</title>
     <style>
         body { margin: 0; overflow: hidden; }
-        canvas { width: 100%; height: 100%; }
+        canvas { width: 100%; height: 100%; display: block; } /* canvasのdisplay: block; を追加すると、下部にわずかにできる余白をなくせます */
     </style>
 </head>
 <body>
+    <!-- Three.jsとその関連ライブラリの読み込み -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/fflate@0.7.0/umd/index.min.js"></script>
+    <!-- r128のFBXLoaderとOrbitControlsはexamples/js/loaders/ および examples/js/controls/ にあります -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script>
         // シーン、カメラ、レンダラー
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer();
+        const renderer = new THREE.WebGLRenderer({ antialias: true }); // antialias: true で描画を滑らかに
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
+
+        // 1. 背景を薄い青に設定
+        // 0xADD8E6 は "LightBlue" のHEXカラーコードです。
+        // 第2引数はアルファ値（不透明度）。1で完全に不透明です。
+        renderer.setClearColor(0xADD8E6, 1); 
 
         // カメラ位置
         camera.position.set(0, 0, 5);
@@ -27,25 +34,73 @@
         // OrbitControls
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.target.set(0, 0, 0);
+        // OrbitControlsはアニメーションループ内で update() を呼び出す必要があります。
         controls.update();
 
         // ライト
-        const light = new THREE.AmbientLight(0xffffff, 0.5);
-        scene.add(light);
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-        directionalLight.position.set(1, 1, 1);
+        // AmbientLightは全体を照らす環境光
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.7); // 明るさを少し上げた
+        scene.add(ambientLight);
+        // DirectionalLightは特定方向からの光（太陽のようなもの）
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8); // 明るさを少し上げた
+        directionalLight.position.set(5, 10, 5); // 光源の位置
+        directionalLight.lookAt(0, 0, 0); // 原点を見るように設定
         scene.add(directionalLight);
 
         // FBXローダー
         const loader = new THREE.FBXLoader();
+
+        // アニメーションミキサーとクロックをグローバルで定義
+        // これらはアニメーションの再生に必要なものです。
+        let mixer;
+        const clock = new THREE.Clock(); // 時間の経過を計測するためのクロック
+
         loader.load('0011.fbx', function (object) {
             scene.add(object);
+
             // モデルをシーン中央に配置
             const box = new THREE.Box3().setFromObject(object);
             const center = box.getCenter(new THREE.Vector3());
-            object.position.sub(center);
+            object.position.sub(center); // モデルの中心をワールド原点に移動
+
+            // 2. モデルのサイズを指定
+            // モデルの最大寸法を取得
+            const size = box.getSize(new THREE.Vector3());
+            const maxDim = Math.max(size.x, size.y, size.z);
+
+            // 希望するモデルの最大寸法（例：2単位）
+            // この値を変更することで、モデルの表示サイズを調整できます。
+            const desiredModelSize = 2; 
+
+            // スケール係数を計算し、モデルに適用
+            const scaleFactor = desiredModelSize / maxDim;
+            object.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
+            // カメラの初期位置もモデルのサイズに合わせて調整すると便利です。
+            // モデルが画面に収まるようにカメラを引く
+            const fovRad = THREE.MathUtils.degToRad(camera.fov);
+            const distance = (maxDim * scaleFactor / 2) / Math.tan(fovRad / 2);
+            camera.position.set(0, 0, distance + (distance * 0.5)); // 少し余裕を持たせる
+            camera.lookAt(0, 0, 0);
+            controls.target.set(0, 0, 0);
+            controls.update(); // カメラ位置変更後もcontrols.update()を忘れずに
+
+            // 3. FBXアニメーションの再生
+            if (object.animations && object.animations.length) {
+                mixer = new THREE.AnimationMixer(object); // モデルに関連するミキサーを作成
+
+                // すべてのアニメーションクリップを再生
+                object.animations.forEach(clip => {
+                    const action = mixer.clipAction(clip);
+                    action.play(); // アニメーションを再生
+                });
+                console.log('FBX animations found and playing:', object.animations);
+            } else {
+                console.log('No animations found in this FBX file.');
+            }
+
         }, undefined, function (error) {
-            console.error('An error occurred:', error);
+            console.error('An error occurred loading the FBX file:', error);
         });
 
         // ウィンドウリサイズ対応
@@ -58,9 +113,21 @@
         // アニメーションループ
         function animate() {
             requestAnimationFrame(animate);
+
+            // アニメーションミキサーの更新
+            // clock.getDelta() は前回のフレームからの経過時間（秒）を返します。
+            // これをミキサーに渡すことで、アニメーションが時間通りに進行します。
+            if (mixer) {
+                mixer.update(clock.getDelta());
+            }
+
+            // OrbitControlsの更新
+            // カメラの操作（回転、拡大縮小など）を有効にするために必要です。
+            controls.update();
+
             renderer.render(scene, camera);
         }
-        animate();
+        animate(); // アニメーションループを開始
     </script>
 </body>
 </html>
