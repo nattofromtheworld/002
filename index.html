@@ -81,12 +81,12 @@
             // DirectionalLight: 遠くから平行に当たる光 (太陽光のようなもの)
             // 第二引数: 光の強さ (0.5で弱めに設定)
             const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-            directionalLight.position.set(100, 100, 100); // 光源のXYZ位置 (遠くから当たるように設定)
+            directionalLight.position.set(100, 100, -100); // 光源のXYZ位置 (遠くから当たるように設定)
             scene.add(directionalLight);
 
             // AmbientLight: シーン全体を均等に照らす光 (影の部分を明るくするのに役立つ)
             // 第二引数: 光の強さ (0.3で弱めに設定)
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
             scene.add(ambientLight);
 
             // --- FBXローダー ---
