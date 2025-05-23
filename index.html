@@ -4,6 +4,17 @@
     <title>FBX 3Dモデルビューア</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+    <!-- ここに importmap を追加します -->
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.158.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.158.0/examples/jsm/"
+      }
+    }
+    </script>
+
     <style>
         body {
             margin: 0;
@@ -34,10 +45,11 @@
 
     <script type="module">
         // Three.js と必要なモジュールをCDNからインポート
+        // importmap を使用するため、インポートパスを変更します。
         // バージョンは '0.158.0' を指定していますが、適宜最新の安定版に更新しても構いません。
-        import * as THREE from 'https://unpkg.com/three@0.158.0/build/three.module.js';
-        import { OrbitControls } from 'https://unpkg.com/three@0.158.0/examples/jsm/controls/OrbitControls.js';
-        import { FBXLoader } from 'https://unpkg.com/three@0.158.0/examples/jsm/loaders/FBXLoader.js';
+        import * as THREE from 'three'; // 'three' という裸の指定子を使う
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js'; // 'three/addons/' を使う
+        import { FBXLoader } from 'three/addons/loaders/FBXLoader.js'; // 'three/addons/' を使う
 
         // グローバル変数
         let scene, camera, renderer, controls;
