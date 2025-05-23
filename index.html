@@ -38,7 +38,7 @@
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.1); 
         scene.add(ambientLight);
         // DirectionalLightは特定方向からの光（太陽のようなもの）。強度をさらに下げました。
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5); // 0.8 -> 0.5
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.2); // 0.8 -> 0.5
         directionalLight.position.set(5, 10, 5); // 光源の位置
         directionalLight.lookAt(0, 0, 0); // 原点を見るように設定
         scene.add(directionalLight);
@@ -50,7 +50,7 @@
         let mixer;
         const clock = new THREE.Clock(); // 時間の経過を計測するためのクロック
 
-        loader.load('0011.fbx', function (object) {
+        loader.load('0012.fbx', function (object) {
             scene.add(object);
 
             // モデルをシーン中央に配置 (バウンディングボックスの中心を原点に移動)
