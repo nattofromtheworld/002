@@ -31,7 +31,7 @@
 
         // OrbitControls
         const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.target.set(0, 0, 0); // 初期ターゲットは原点（モデルの中心がここに来ることを想定）
+        controls.target.set(0, 2, 0); // 初期ターゲットは原点（モデルの中心がここに来ることを想定）
         controls.update();
 
         // ライト
